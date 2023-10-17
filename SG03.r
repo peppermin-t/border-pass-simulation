@@ -18,7 +18,6 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=400, trf=4, tmb=300, tmf=3, maxb=20)
     }
     u <- runif(7200 - 1800)
     car_coming <- u < a.rate
-    print(length(which(car_coming)))
 
     middle <- c()
 
@@ -74,7 +73,6 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=400, trf=4, tmb=300, tmf=3, maxb=20)
                 if (len(brit.queues)[idx_insert] == 1)
                     brit.countdowns[idx_insert] <- round(runif(1, tmb, tmb + trb))
             }
-            middle <- c()
         }
         # detect whether a car is finished
         idx_rmv <- which(brit.countdowns == 0)
@@ -105,3 +103,5 @@ qsim()
             # }
 # problem2: runif rounding
 # problem3: eq
+# problem4: setdiff
+# problem5: processing time generated in the front or 实时的
