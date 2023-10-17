@@ -1,32 +1,36 @@
-qsim <- function(mf=5, mb=5, a.rate=.1, trb=400, trf=4, tmb=300, tmf=3, maxb=20) {
-    len <- function(queues) {
-        sapply(queues, length)
-    }
-    countdown <- function(xx) {
-        ii <- which(xx > 0)
-        xx[ii] <- xx[ii] - 1
-        xx
-    }
-    top <- function(xx) {
-        sapply(xx, function(x) x[[1]])
-    }
-    pop <- function(xx) {
-        for (i in seq_along(xx)) {
-            xx[[i]] <- xx[[i]][-1]
-        }
-        xx
-    }
-    u <- runif(7200 - 1800)
-    car_coming <- u < a.rate
+# set.seed(5)
 
-    middle <- c()
+countdown <- function(xx) {
+    ii <- which(xx > 0)
+    xx[ii] <- xx[ii] - 1
+    xx
+}
+insert_cars <- function(queues, countdowns, tm, tr) {
+    # find queue and insert
+    ii <- which.min(queues)
+    queues[ii] <- queues[ii] + 1
+    if (queues[ii] == 1)
+        countdowns[ii] <- ceiling(runif(1, tm, tm + tr))
+    list(q=queues, cd=countdowns)
+}
+update_stations <- function(queues, countdowns, ii, tm, tr) {
+    queues[ii] <- queues[ii] - 1
 
-    french.countdowns <- as.vector(rep(-1, mb))
-    # pos int for time, 0 for countdown over, -1 for no cars
-    french.queues <- vector("list", mf)
+    ii_no_car <- which(queues == 0)
+    ii_countdown <- setdiff(ii, ii_no_car)
+    countdowns[ii_countdown] <- ceiling(runif(length(ii_countdown), tm, tm + tr))
+    countdowns[ii_no_car] <- -1
+    list(q=queues, cd=countdowns)
+}
 
-    brit.countdowns <- as.vector(rep(-1, mb))
-    brit.queues <- vector("list", mb)
+qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20) {
+    car_coming <- runif(7200 - 1800) < a.rate
+
+    french.countdowns <- rep(-1, mf)  # pos int for time, 0 for countdown over, -1 for no cars ? optimize
+    french.queues <- rep(0, mf)
+
+    brit.countdowns <- rep(-1, mb)
+    brit.queues <- rep(0, mb)
 
     nf <- nb <- eq <- rep(0, 7200)
 
@@ -35,65 +39,48 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=400, trf=4, tmb=300, tmf=3, maxb=20)
         french.countdowns <- countdown(french.countdowns)
         brit.countdowns <- countdown(brit.countdowns)
 
-        # French
-        if (i < length(u) && car_coming[i]) {
-            # find queue and insert
-            idx_insert <- which.min(len(french.queues))
-            french.queues[[idx_insert]] <- c(french.queues[[idx_insert]], i)
-            if (len(french.queues)[idx_insert] == 1)
-                french.countdowns[idx_insert] <- round(runif(1, tmf, tmf + trf))
+        # Entrance
+        if (i < length(car_coming) && car_coming[i]) {
+            french <- insert_cars(french.queues, french.countdowns, tmf, trf)
+            french.countdowns <- french$cd
+            french.queues <- french$q
         }
-        # detect whether a car is finished
+
+        # Middle
         idx_rmv <- which(french.countdowns == 0)
-        if (length(idx_rmv) != 0 && sum(len(brit.queues)) != mb * maxb) {
-            # the brits queue is not full
+        if (length(idx_rmv) != 0 && sum(brit.queues) != mb * maxb) {
+            # Freanch Exit
             if (length(idx_rmv) != 1)
-                idx_rmv <- sample(idx_rmv, min(mb * maxb - sum(len(brit.queues)), length(idx_rmv)))
-            # french side
-            car_out <- top(french.queues[idx_rmv])
-            french.queues[idx_rmv] <- pop(french.queues[idx_rmv])
+                idx_rmv <- sample(idx_rmv, min(mb * maxb - sum(brit.queues), length(idx_rmv)))
 
-            idx_no_car <- which(len(french.queues) == 0)
-            idx_countdown_renew <- setdiff(idx_rmv, idx_no_car)
-            french.countdowns[idx_countdown_renew] <- round(runif(length(idx_countdown_renew), tmf, tmf + trf))
-            # the rest of them are still 0
-            french.countdowns[idx_no_car] <- -1  # -xx has to ensure that xx is not null
-            # brit side
-            middle <- c(car_out)
-        }
+            transmit <- length(idx_rmv)
+            french <- update_stations(french.queues, french.countdowns, idx_rmv, tmf, trf)
+            french.countdowns <- french$cd
+            french.queues <- french$q
 
-        # Brit
-        if (length(middle) != 0) {
-            # after filtering from french queues, the middle cars definitely have place
-            # find queue and insert
-            for (start_time in middle) {
-                idx_insert <- which.min(len(brit.queues))
-                brit.queues[[idx_insert]] <- c(brit.queues[[idx_insert]], start_time)
-                if (len(brit.queues)[idx_insert] == 1)
-                    brit.countdowns[idx_insert] <- round(runif(1, tmb, tmb + trb))
+            # Brit
+            for (j in 1:transmit) {
+                brit <- insert_cars(brit.queues, brit.countdowns, tmb, trb)
+                brit.countdowns <- brit$cd
+                brit.queues <- brit$q
             }
         }
-        # detect whether a car is finished
+
+        # Exit
         idx_rmv <- which(brit.countdowns == 0)
         if (length(idx_rmv) != 0) {
-            car_out <- i - top(brit.queues[idx_rmv])
-            brit.queues[idx_rmv] <- pop(brit.queues[idx_rmv])
-
-            idx_no_car <- which(len(brit.queues) == 0)
-            idx_countdown_renew <- setdiff(idx_rmv, idx_no_car)
-            brit.countdowns[idx_countdown_renew] <- round(runif(length(idx_countdown_renew), tmb, tmb + trb))
-            brit.countdowns[idx_no_car] <- -1
+            brit <- update_stations(brit.queues, brit.countdowns, idx_rmv, tmb, trb)
+            brit.countdowns <- brit$cd
+            brit.queues <- brit$q
         }
-        nf[i] <- mean(len(french.queues))
-        nb[i] <- mean(len(brit.queues))
-        eq[i] <- nf[i] * trf / 2 + nb[i] * trb / 2
+
+        # result update
+        nf[i] <- mean(french.queues)
+        nb[i] <- mean(brit.queues)
+        eq[i] <- nf[i] * (tmf + trf / 2) + nb[i] * (tmb + trb / 2)
     }
 
     list(nf=nf, nb=nb, eq=eq)
 }
 
-set.seed(5)
 qsim()
-
-# problem2: runif rounding
-# problem5: processing time generated in the front or 实时的
