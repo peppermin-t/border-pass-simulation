@@ -61,7 +61,7 @@ countdown <- function(xx) {
 }
 
 # Define "insert_cars" function
-insert_cars <- function(queues, countdowns, tm, tr) {
+insert_cars <- function(queues, times_left, tm, tr) {
 
   # extract the index of the shortest queue
   ii <- which.min(queues)
@@ -75,14 +75,14 @@ insert_cars <- function(queues, countdowns, tm, tr) {
     # assign processing time with the given parameters tm and tr
     # the random processing time is generated using sample function..?
     # !!!! This line means we are assigning the same processing time for cars..?
-    countdowns[ii] <- sample(tm:(tm + tr), 1)
+    times_left[ii] <- sample(tm:(tm + tr), 1)
 
   # Return outputs in a list
-  list(q=queues, cd=countdowns)
+  list(q=queues, cd=times_left)
 }
 
 # Define "update_stations" function
-update_stations <- function(queues, countdowns, ii, tm, tr) {
+update_stations <- function(queues, times_left, ii, tm, tr) {
 
   # queues at each station will have one car less
   queues[ii] <- queues[ii] - 1
@@ -94,11 +94,11 @@ update_stations <- function(queues, countdowns, ii, tm, tr) {
   ii_countdown <- setdiff(ii, ii_no_car)
 
   # assign processing times for th
-  countdowns[ii_countdown] <- sample(tm:(tm + tr), length(ii_countdown), replace = TRUE)
+  times_left[ii_countdown] <- sample(tm:(tm + tr), length(ii_countdown), replace = TRUE)
 
 
-  countdowns[ii_no_car] <- -1
-  list(q=queues, cd=countdowns)
+  times_left[ii_no_car] <- -1
+  list(q=queues, cd=times_left)
 }
 
 # Define "qsim" function
@@ -110,10 +110,10 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
 
   car_coming <- runif(n - n_) < a.rate
 
-  french.countdowns <- rep(-1, mf)  # pos int for time, 0 for countdown over, -1 for no cars ? optimize
+  french.times_left <- rep(-1, mf)  # pos int for time, 0 for countdown over, -1 for no cars ? optimize
   french.queues <- rep(0, mf)
 
-  brit.countdowns <- rep(-1, mb)
+  brit.times_left <- rep(-1, mb)
   brit.queues <- rep(0, mb)
 
   nf <- nb <- eq <- rep(0, n) # initialise outputs of the model
@@ -121,41 +121,41 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
   for (i in 1:n) { ## loop over seconds
 
     # general updates
-    french.countdowns <- countdown(french.countdowns)
-    brit.countdowns <- countdown(brit.countdowns)
+    french.times_left <- countdown(french.times_left)
+    brit.times_left <- countdown(brit.times_left)
 
     ## Entering French border
     if (i < length(car_coming) && car_coming[i]) {
-      french <- insert_cars(french.queues, french.countdowns, tmf, trf)
-      french.countdowns <- french$cd
+      french <- insert_cars(french.queues, french.times_left, tmf, trf)
+      french.times_left <- french$cd
       french.queues <- french$q
     }
 
     ## Transmission (Moving from French border to British border)
-    idx_rmv <- which(french.countdowns == 0)
-    if (length(idx_rmv) != 0 && sum(brit.queues) != mb * maxb) {
+    idx_rmv <- which(french.times_left == 0)
+    if (length(idx_rmv) != 0 && sum(brit.queues) < mb * maxb) {
       # Exit from French border
       if (length(idx_rmv) != 1)
         idx_rmv <- sample(idx_rmv, min(mb * maxb - sum(brit.queues), length(idx_rmv)))
 
       transmit <- length(idx_rmv)
-      french <- update_stations(french.queues, french.countdowns, idx_rmv, tmf, trf)
-      french.countdowns <- french$cd
+      french <- update_stations(french.queues, french.times_left, idx_rmv, tmf, trf)
+      french.times_left <- french$cd
       french.queues <- french$q
 
       # Entering British border
       for (j in 1:transmit) {
-        brit <- insert_cars(brit.queues, brit.countdowns, tmb, trb)
-        brit.countdowns <- brit$cd
+        brit <- insert_cars(brit.queues, brit.times_left, tmb, trb)
+        brit.times_left <- brit$cd
         brit.queues <- brit$q
       }
     }
 
     # Exit from British border
-    idx_rmv <- which(brit.countdowns == 0)
+    idx_rmv <- which(brit.times_left == 0)
     if (length(idx_rmv) != 0) {
-      brit <- update_stations(brit.queues, brit.countdowns, idx_rmv, tmb, trb)
-      brit.countdowns <- brit$cd
+      brit <- update_stations(brit.queues, brit.times_left, idx_rmv, tmb, trb)
+      brit.times_left <- brit$cd
       brit.queues <- brit$q
     }
 
@@ -204,8 +204,8 @@ failed <- logical(100)  #设置空的vector
 
 #将qsim重复跑一百次，记录下最后一秒的预计排队数
 for (i in 1:100) {
-  res <- qsim(tmb=40)
-  failed[i] <- res$nf[length(res$nf)] + res$nb[length(res$nb)] != 0
+    res <- qsim(tmb=40)
+    failed[i] <- res$nf[length(res$nf)] + res$nb[length(res$nb)] != 0
 }
 
 prob <- mean(failed)
@@ -213,4 +213,5 @@ print(prob)
 
 # 用点还是用线？
 # 100次实验，tmb=40？
+# 坐标
 # 用不用考虑结尾的nf？
