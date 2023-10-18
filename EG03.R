@@ -175,4 +175,42 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
   list(nf=nf, nb=nb, eq=eq)
 }
 
-qsim()
+
+plot_qsim <- function(res, params) {
+  x_indices <- seq_along(res$nf) #将nf的index对应到x轴
+
+  #在左上角的图中画出nf的点状图
+  plot(x_indices, res$nf, col = "red", xlab = "current time/s", ylab = "queue lengths",
+     main = paste("queue lengths(", params, ")"),
+     xlim = c(0, 7300), ylim = c(0, 20))
+  legend("topright", legend = c("nf", "nb"), col = c("red", "blue"),
+     pch = 1, x.intersp = 0.5, y.intersp = 0.5) #给出对应颜色的批注
+  points(x_indices, res$nb, col="blue") #在第一张图中添加nb的点状图
+
+  plot(x_indices, res$eq, col = "green", xlab = "current time/s", ylab = "queue time",
+     main = paste("expected queue time(", params, ")"),
+     xlim = c(0, 7300), ylim = c(0, 2000))
+  legend("topright", legend = "eq", col = "green", pch = 1, x.intersp = 0.5, y.intersp = 0.5)
+}
+
+par(mfrow=c(2, 2)) #创建4张图的模型
+
+plot_qsim(qsim(), "tmb=30")
+
+plot_qsim(qsim(tmb=40), "tmb=40")
+
+
+failed <- logical(100)  #设置空的vector
+
+#将qsim重复跑一百次，记录下最后一秒的预计排队数
+for (i in 1:100) {
+  res <- qsim(tmb=40)
+  failed[i] <- res$nf[length(res$nf)] + res$nb[length(res$nb)] != 0
+}
+
+prob <- mean(failed)
+print(prob)
+
+# 用点还是用线？
+# 100次实验，tmb=40？
+# 用不用考虑结尾的nf？
