@@ -5,6 +5,11 @@
 
 # Members and Contribution Breakdown
 
+# Joint contribution: Set up initial plan of the code and agree to the outputs for each section
+
+# Yinjia Chen (S2320995) | Main developer of qsim model; sub-validator 1 of comments
+# Yiwen Xing (S2530703)  | Main developer of plot_qsim model; sub-developer 2 of qsim model; sub-validator 2 of comments
+# Kai Wen Lian (S2593019)| Main validator of all codes and comments; sub-developer 1 of qsim model
 
 
 # This R code consists of a model that will help simulating the passport
@@ -255,38 +260,62 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
   list(nf=nf, nb=nb, eq=eq)
 }
 
+# Define "plot_qsim" function
+# Parameters used are:
+# - "res" (results from a model, in this case is the "qsim" model)
+# - "params" (text to be inserted)
 plot_qsim <- function(res, params) {
-  x_indices <- seq_along(res$nf) #将nf的index对应到x轴
+  
+  # produce indices of x-axis based on the number of data points in vector "nf"
+  x_indices <- seq_along(res$nf) 
 
-  #在左上角的图中画出nf的点状图
+  ## plot the first output "nf" against the simulated seconds (shown by red dots)
   plot(x_indices, res$nf, col = "red", xlab = "current time/s", ylab = "queue lengths",
+     
+     # add title 
      main = paste("queue lengths(", params, ")"),
+     # define limits of each axis
      xlim = c(0, 7300), ylim = c(0, 20))
+  
+  # add legend with red representing output "nf" and blue representing output "nb"
   legend("topright", legend = c("nf", "nb"), col = c("red", "blue"),
-     pch = 1, x.intersp = 0.5, y.intersp = 0.5) #给出对应颜色的批注
-  points(x_indices, res$nb, col="blue") #在第一张图中添加nb的点状图
+     # edit size of legend
+     pch = 1, x.intersp = 0.5, y.intersp = 0.5)
+  
+  # plot the second output "nb" against the simulated seconds (shown by blue dots)
+  points(x_indices, res$nb, col="blue") 
 
+  # plot the third output "eq" against the simulated seconds (shown by green dots)
   plot(x_indices, res$eq, col = "green", xlab = "current time/s", ylab = "queue time",
+     # add title
      main = paste("expected queue time(", params, ")"),
+     # define limits of each axis
      xlim = c(0, 7300), ylim = c(0, 2000))
+  
+  # add legend for "eq" plots
   legend("topright", legend = "eq", col = "green", pch = 1, x.intersp = 0.5, y.intersp = 0.5)
 }
 
-par(mfrow=c(2, 2)) #创建4张图的模型
+# Set number of plots to be shown in each row and each column
+par(mfrow=c(2, 2))
 
 plot_qsim(qsim(), "tmb=30")
 
 plot_qsim(qsim(tmb=40), "tmb=40")
 
+# initialise empty vector for logical inputs ("True" or "False")
+failed <- logical(100)
 
-failed <- logical(100)  #设置空的vector
-
-#将qsim重复跑一百次，记录下最后一秒的预计排队数
-for (i in 1:100) {
+for (i in 1:100) { ## loop model for 100 simulations
   res <- qsim(tmb=40)
+  # compute the number of cars failed to cross the border at the last simulated second
+  # this is found by determining whether the 
+  #   sum of the last item in vector "nf" and vector "nb" not equal to 0
   failed[i] <- res$nf[length(res$nf)] + res$nb[length(res$nb)] != 0
 }
 
+# Probability of  at least one car missing the ferry departure 
+# (i.e. still being in the queue at the end of the simulation) is given by: 
 prob <- mean(failed)
 print(prob)
 
