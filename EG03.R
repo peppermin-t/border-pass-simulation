@@ -91,8 +91,8 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
       times_left[ii] <- sample(tm:(tm + tr), 1)
 
     # Return outputs in a list of 2;
-    # namely "q" for queues in each station and "cd" for remaining processing times
-    list(q=queues, cd=times_left)
+    # namely "q" for queues in each station and "tl" for remaining processing times
+    list(q=queues, tl=times_left)
   }
 
   # Define "update_stations" function
@@ -111,16 +111,16 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
 
     # if there are still cars in the queue, after one car moves out to British border,
     # extract index of the queues with the following cars
-    ii_countdown <- setdiff(ii, ii_no_car)
+    ii_car_follows <- setdiff(ii, ii_no_car)
 
     # assign processing times for the following cars in the queue
-    times_left[ii_countdown] <- sample(tm:(tm + tr), length(ii_countdown), replace = TRUE)
+    times_left[ii_car_follows] <- sample(tm:(tm + tr), length(ii_car_follows), replace = TRUE)
 
     # let the processing times at the index of queues without cars to be "-1"
     times_left[ii_no_car] <- -1
 
     # return output as lists of "q" for
-    list(q=queues, cd=times_left)
+    list(q=queues, tl=times_left)
   }
 
   # Number of simulated seconds
@@ -167,11 +167,11 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
     if (i < length(car_coming) && car_coming[i]) {
 
       # apply "insert_cars" function by stating its parameter
-      # the outputs are "q" (queueing status in each station) and "cd" (remaining processing times)
+      # the outputs are "q" (queueing status in each station) and "tl" (remaining processing times)
       french <- insert_cars(french.queues, french.times_left, tmf, trf)
 
       # store each output in a new vector
-      french.times_left <- french$cd # "cd" (remaining processing times)
+      french.times_left <- french$tl # "tl" (remaining processing times)
       french.queues <- french$q # "q" (queueing status in each station)
     }
 
@@ -202,22 +202,22 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
       transmit <- length(idx_rmv)
 
       # apply "update_stations" function by stating its parameters
-      # the outputs are "q" (queueing status in each station) and "cd" (remaining processing times)
+      # the outputs are "q" (queueing status in each station) and "tl" (remaining processing times)
       french <- update_stations(french.queues, french.times_left, idx_rmv, tmf, trf)
 
       # store each output in a new vector
-      french.times_left <- french$cd # "cd" (remaining processing times)
+      french.times_left <- french$tl # "tl" (remaining processing times)
       french.queues <- french$q # "q" (queueing status in each station)
 
       ## Entering British border
       for (j in 1:transmit) { ## loop over the number of cars that will undergo transmission
 
         # apply "insert_cars" function by stating its parameters
-        # the outputs are "q" (queueing status in each station) and "cd" (remaining processing times)
+        # the outputs are "q" (queueing status in each station) and "tl" (remaining processing times)
         brit <- insert_cars(brit.queues, brit.times_left, tmb, trb)
 
         # store each output in a new vector
-        brit.times_left <- brit$cd # "cd" (remaining processing times)
+        brit.times_left <- brit$tl # "tl" (remaining processing times)
         brit.queues <- brit$q # "q" (queueing status in each station)
       }
     }
@@ -231,11 +231,11 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
     if (length(idx_rmv) != 0) {
 
       # apply "update_stations" function by stating its parameters
-      # the outputs are "q" (queueing status in each station) and "cd" (remaining processing times)
+      # the outputs are "q" (queueing status in each station) and "tl" (remaining processing times)
       brit <- update_stations(brit.queues, brit.times_left, idx_rmv, tmb, trb)
 
       # store each output in a new vector
-      brit.times_left <- brit$cd # "cd" (remaining processing times)
+      brit.times_left <- brit$tl # "tl" (remaining processing times)
       brit.queues <- brit$q # "q" (queue status in each station)
     }
 
@@ -253,9 +253,6 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
   # Print the outputs as vectors
   list(nf=nf, nb=nb, eq=eq)
 }
-
-# Run the qsim model
-qsim()
 
 # Define "plot_qsim" function
 # Parameters used are:
@@ -323,7 +320,6 @@ for (i in 1:100) { ## loop model for 100 simulations
 # Probability of  at least one car missing the ferry departure 
 # (i.e. still being in the queue at the end of the simulation) is given by: 
 prob <- mean(failed)
-cat(prob)
 cat(paste("The probability of at least one car missing the ferry departure is", prob))
 
 # Implications of small extra delays in British checking:
