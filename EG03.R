@@ -15,24 +15,26 @@
 # This R code consists of a model that will help simulating the passport
 # control queues, particularly on simulating cars moving through French, followed
 # by British passport control at a French ferry terminal. The main function used
-# for such simulation is named as qsim.
+# for such simulation is named as "qsim".
 
 # Model Assumptions:
 # 1. There are no queues at the start of the period, i.e., nf = nb = 0
-# 2. Check-in closes 30 mins before departure, i.e., no new arriving cars
+# 2. Check-in closes 30 mins before departure, i.e., no new arriving cars in the last half an hour of simulation
 # 3. There are no extreme events that will affect the output, e.g., system broke down during the process
 # 4. The arrival car takes 0 seconds to join the queue
 #    - "queue" refers to the French queue at the start and British queue during transmission
 
 # Constants in the qsim model:
-# 1. mf is the number of french passport control stations
-# 2. mb is the number of british passport control stations
-# 3. maxb is the maximum british queue length (per station)
-# 4. a.rate is the probability of a car arriving each second
+# 1. mf is the number of french passport control stations (default: mf=5)
+# 2. mb is the number of british passport control stations (default: mb=5)
+# 3. maxb is the maximum british queue length (per station) (default: maxb=20)
+# 4. a.rate is the probability of a car arriving each second (default: a.rate=0.1)
 
 # Parameters in the qsim model: 
-# 1. tf, the processing time for a french station is uniformly distributed between tmf and tmf+trf
-# 2. tb, the processing time for a british station is uniformly distributed between tmb and tmb+trb
+# 1. tf, the processing time for a french station is uniformly distributed between tmf and tmf+trf 
+#    (default: tmf=30, trf=40)
+# 2. tb, the processing time for a british station is uniformly distributed between tmb and tmb+trb 
+#    (default: tmb=30, trb=40)
 # # Default simulation parameters: average rate of processing passports by French and British = arrival rate (a.rate)
 
 # For each simulation second, the output should contain:
@@ -42,11 +44,8 @@
 
 # Stages: nf, nb
 # We update every second for:
-# 1. nf, according to a.rate and
+# 1. nf, according to a.rate and whether all british queues have reached its maximum capacity
 # 2. nb, according to processing time assigned to each car and the length of British queue
-# # If there is a car arriving at French station,
-# # compute tf (= the time until the car leave for British station)
-
 
 # n is the number of simulated seconds. 
 # In this case, we are simulating queues for 2 hours, thus n=7200
@@ -57,25 +56,25 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
 
   # Define "countdown" function
   # Aim to decrease processing times for each car by one second in each loop
-  # if they are greater than zero
+  #   if they are greater than zero
   # Parameter used is "remaining processing times".
 
-  countdown <- function(xx) {
+  countdown <- function(times_left) {
 
-    # extract index of numbers in a vector xx that are greater than zero
-    ii <- which(xx > 0)
+    # extract index of remaining processing times that are greater than zero
+    ii <- which(times_left > 0)
 
-    # these number will decrease by one
-    xx[ii] <- xx[ii] - 1
+    # these times will decrease by one (second)
+    times_left[ii] <- times_left[ii] - 1
 
-    # return vector xx
-    xx
+    # return vector of remaining processing times
+    times_left
   }
 
   # Define "insert_cars" function
   # Aim to determine which queue that an arriving car should join and
-  # to assign processing times if it is the first car for that queue
-  # Parameters used are "queue status in each station", "remaining processing times" and "parameters for uniform distributions".
+  #   to assign processing times if it is the first car for that queue
+  # Parameters used are "queueing status in each station", "remaining processing times" and "parameters for uniform distributions".
 
   insert_cars <- function(queues, times_left, tm, tr) {
 
@@ -99,8 +98,8 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
   # Define "update_stations" function
   # Aim to process the transmission of cars from French to British border.
   # Each queue will have one car less when the process is finished, and if there are
-  # more cars in the following, we will assign processing time to that car.
-  # Parameters used are "queue status in each station", "processing times" and "parameters for uniform distribution".
+  #   more cars in the following, we will assign processing time to that car.
+  # Parameters used are "queueing status in each station", "processing times" and "parameters for uniform distribution".
 
   update_stations <- function(queues, times_left, ii, tm, tr) {
 
@@ -143,11 +142,11 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
   french.queues <- rep(0, mf)
 
   # initialise a list of "mb (number of british stations)" numbers, with "-1"
-  # concept is the same as above (see line 137 - 139)
+  # concept is the same as above (see line 134 - 137)
   brit.times_left <- rep(-1, mb)
 
   # initialise a list of "mb" numbers, with "0"
-  # concept is the same as above (see line 143)
+  # concept is the same as above (see line 141)
   brit.queues <- rep(0, mb)
 
   # initialise outputs of the model
@@ -218,7 +217,7 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
         brit <- insert_cars(brit.queues, brit.times_left, tmb, trb)
 
         # store each output in a new vector
-        brit.times_left <- brit$cd # "q" (queue status in each station)
+        brit.times_left <- brit$cd # "cd" (remaining processing times)
         brit.queues <- brit$q # "q" (queueing status in each station)
       }
     }
@@ -255,6 +254,9 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
   list(nf=nf, nb=nb, eq=eq)
 }
 
+# Run the qsim model
+qsim()
+
 # Define "plot_qsim" function
 # Parameters used are:
 # - "res" (results from a model, in this case is the "qsim" model)
@@ -263,8 +265,9 @@ plot_qsim <- function(res, params) {
 
   # generate indices of x-axis based on the number of data points in vector "nf"
   x_indices <- seq_along(res$nf)
-  # generate limits of the x and y axis using the maximum number of data each axis' displaying
-  x_limit <- length(res$nf)
+  # generate limits of the x axis based on the maximum number of data
+  x_limit <- length(res$nf) 
+  # generate limits of the y axes based on the maximum data in both outputs 
   y_nfb_limit <- max(max(res$nf), max(res$nb))
   y_eq_limit <- max(res$eq)
 
@@ -321,3 +324,11 @@ for (i in 1:100) { ## loop model for 100 simulations
 # (i.e. still being in the queue at the end of the simulation) is given by: 
 prob <- mean(failed)
 cat(prob)
+cat(paste("The probability of at least one car missing the ferry departure is", prob))
+
+# Implications of small extra delays in British checking:
+# The plots shown above consist of two plots with tmb=30 (by default) and the other two with tmb=40.
+# We are comparing the two plots in the first row and those in the second row.
+# - When the process at the british border is being delayed slightly, the processing speed in the British border is longer and queues are expected to reach its maximum capacity (maxb) faster (shown by blue plots). 
+# - This will eventually impact on the processing speed in the french border as the cars are unable to proceed, causing average length of french queues to increase (shown by the red plots)
+# - Therefore, the increase in the processing times in both borders will cause the increase in the expected queueing time (shown by the green plots). 
