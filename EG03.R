@@ -267,7 +267,7 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
 plot_qsim <- function(res, params) {
   
   # produce indices of x-axis based on the number of data points in vector "nf"
-  x_indices <- seq_along(res$nf) 
+  x_indices <- seq_along(res$nf)
 
   ## plot the first output "nf" against the simulated seconds (shown by red dots)
   plot(x_indices, res$nf, col = "red", xlab = "current time/s", ylab = "queue lengths",
@@ -283,7 +283,7 @@ plot_qsim <- function(res, params) {
      pch = 1, x.intersp = 0.5, y.intersp = 0.5)
   
   # plot the second output "nb" against the simulated seconds (shown by blue dots)
-  points(x_indices, res$nb, col="blue") 
+  points(x_indices, res$nb, col="blue")
 
   # plot the third output "eq" against the simulated seconds (shown by green dots)
   plot(x_indices, res$eq, col = "green", xlab = "current time/s", ylab = "queue time",
@@ -299,8 +299,12 @@ plot_qsim <- function(res, params) {
 # Set number of plots to be shown in each row and each column
 par(mfrow=c(2, 2))
 
+# apply plot_qsim func to demonstrate a one-time qsim results (nf, nb, and eq) with two plots
+# and passes the running parameters in as titles to display (tmb=30)
 plot_qsim(qsim(), "tmb=30")
 
+# apply plot_qsim func to demonstrate a one-time qsim results (nf, nb, and eq) with two plots
+# and passes the running parameters in as titles to display (tmb=40)
 plot_qsim(qsim(tmb=40), "tmb=40")
 
 # initialise empty vector for logical inputs ("True" or "False")
@@ -309,7 +313,7 @@ failed <- logical(100)
 for (i in 1:100) { ## loop model for 100 simulations
   res <- qsim(tmb=40)
   # compute the number of cars failed to cross the border at the last simulated second
-  # this is found by determining whether the 
+  # this is found by determining whether the
   #   sum of the last item in vector "nf" and vector "nb" not equal to 0
   failed[i] <- res$nf[length(res$nf)] + res$nb[length(res$nb)] != 0
 }
