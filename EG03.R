@@ -44,90 +44,85 @@
 # We update every second for:
 # 1. nf, according to a.rate and
 # 2. nb, according to processing time assigned to each car and the length of British queue
-# # If there is a car arriving at French station, 
+# # If there is a car arriving at French station,
 # # compute tf (= the time until the car leave for British station)
 
 
 # n is the number of simulated seconds. 
 # In this case, we are simulating queues for 2 hours, thus n=7200
 
-
-
-# Define "countdown" function
-# Aim to decrease processing times for each car by one second in each loop
-# if they are greater than zero
-# Parameter used is "remaining processing times".
-
-
-countdown <- function(xx) {
-
-  # extract index of numbers in a vector xx that are greater than zero
-  ii <- which(xx > 0)
-
-  # these number will decrease by one
-  xx[ii] <- xx[ii] - 1
-
-  # return vector xx
-  xx
-}
-
-
-# Define "insert_cars" function
-# Aim to determine which queue that an arriving car should join and
-# to assign processing times if it is the first car for that queue
-# Parameters used are "queue status in each station", "remaining processing times" and "parameters for uniform distributions".
-
-insert_cars <- function(queues, times_left, tm, tr) {
-
-  # extract the index of the shortest queue
-  ii <- which.min(queues)
-
-  # this queue will increase by one (car)
-  queues[ii] <- queues[ii] + 1
-
-  # if that car is the first car in the queue
-  if (queues[ii] == 1)
-
-    # assign processing time with the given parameters tm and tr
-    times_left[ii] <- sample(tm:(tm + tr), 1)
-
-  # Return outputs in a list of 2;
-  # namely "q" for queues in each station and "cd" for remaining processing times
-  list(q=queues, cd=times_left)
-}
-
-
-# Define "update_stations" function
-# Aim to process the transmission of cars from French to British border.
-# Each queue will have one car less when the process is finished, and if there are
-# more cars in the following, we will assign processing time to that car.
-# Parameters used are "queue status in each station", "processing times" and "parameters for uniform distribution".
-
-update_stations <- function(queues, times_left, ii, tm, tr) {
-
-  # queues at each station will have one car less
-  queues[ii] <- queues[ii] - 1
-
-  # extract index of queues that has no cars
-  ii_no_car <- which(queues == 0)
-
-  # if there are still cars in the queue, after one car moves out to British border,
-  # extract index of the queues with the following cars
-  ii_countdown <- setdiff(ii, ii_no_car)
-
-  # assign processing times for the following cars in the queue
-  times_left[ii_countdown] <- sample(tm:(tm + tr), length(ii_countdown), replace = TRUE)
-
-  # let the processing times at the index of queues without cars to be "-1"
-  times_left[ii_no_car] <- -1
-
-  # return output as lists of "q" for
-  list(q=queues, cd=times_left)
-}
-
 # Define "qsim" function
 # Parameters are defined as above.
 qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20) {
+
+  # Define "countdown" function
+  # Aim to decrease processing times for each car by one second in each loop
+  # if they are greater than zero
+  # Parameter used is "remaining processing times".
+
+  countdown <- function(xx) {
+
+    # extract index of numbers in a vector xx that are greater than zero
+    ii <- which(xx > 0)
+
+    # these number will decrease by one
+    xx[ii] <- xx[ii] - 1
+
+    # return vector xx
+    xx
+  }
+
+  # Define "insert_cars" function
+  # Aim to determine which queue that an arriving car should join and
+  # to assign processing times if it is the first car for that queue
+  # Parameters used are "queue status in each station", "remaining processing times" and "parameters for uniform distributions".
+
+  insert_cars <- function(queues, times_left, tm, tr) {
+
+    # extract the index of the shortest queue
+    ii <- which.min(queues)
+
+    # this queue will increase by one (car)
+    queues[ii] <- queues[ii] + 1
+
+    # if that car is the first car in the queue
+    if (queues[ii] == 1)
+
+      # assign processing time with the given parameters tm and tr
+      times_left[ii] <- sample(tm:(tm + tr), 1)
+
+    # Return outputs in a list of 2;
+    # namely "q" for queues in each station and "cd" for remaining processing times
+    list(q=queues, cd=times_left)
+  }
+
+  # Define "update_stations" function
+  # Aim to process the transmission of cars from French to British border.
+  # Each queue will have one car less when the process is finished, and if there are
+  # more cars in the following, we will assign processing time to that car.
+  # Parameters used are "queue status in each station", "processing times" and "parameters for uniform distribution".
+
+  update_stations <- function(queues, times_left, ii, tm, tr) {
+
+    # queues at each station will have one car less
+    queues[ii] <- queues[ii] - 1
+
+    # extract index of queues that has no cars
+    ii_no_car <- which(queues == 0)
+
+    # if there are still cars in the queue, after one car moves out to British border,
+    # extract index of the queues with the following cars
+    ii_countdown <- setdiff(ii, ii_no_car)
+
+    # assign processing times for the following cars in the queue
+    times_left[ii_countdown] <- sample(tm:(tm + tr), length(ii_countdown), replace = TRUE)
+
+    # let the processing times at the index of queues without cars to be "-1"
+    times_left[ii_no_car] <- -1
+
+    # return output as lists of "q" for
+    list(q=queues, cd=times_left)
+  }
 
   # Number of simulated seconds
   n <- 2 * 60 * 60 # 7200
@@ -265,23 +260,27 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
 # - "res" (results from a model, in this case is the "qsim" model)
 # - "params" (text to be inserted)
 plot_qsim <- function(res, params) {
-  
-  # produce indices of x-axis based on the number of data points in vector "nf"
+
+  # generate indices of x-axis based on the number of data points in vector "nf"
   x_indices <- seq_along(res$nf)
+  # generate limits of the x and y axis using the maximum number of data each axis' displaying
+  x_limit <- length(res$nf)
+  y_nfb_limit <- max(max(res$nf), max(res$nb))
+  y_eq_limit <- max(res$eq)
 
   ## plot the first output "nf" against the simulated seconds (shown by red dots)
   plot(x_indices, res$nf, col = "red", xlab = "current time/s", ylab = "queue lengths",
-     
+
      # add title 
      main = paste("queue lengths(", params, ")"),
      # define limits of each axis
-     xlim = c(0, 7300), ylim = c(0, 20))
-  
+     xlim = c(0, x_limit), ylim = c(0, y_nfb_limit))
+
   # add legend with red representing output "nf" and blue representing output "nb"
   legend("topright", legend = c("nf", "nb"), col = c("red", "blue"),
      # edit size of legend
      pch = 1, x.intersp = 0.5, y.intersp = 0.5)
-  
+
   # plot the second output "nb" against the simulated seconds (shown by blue dots)
   points(x_indices, res$nb, col="blue")
 
@@ -290,8 +289,8 @@ plot_qsim <- function(res, params) {
      # add title
      main = paste("expected queue time(", params, ")"),
      # define limits of each axis
-     xlim = c(0, 7300), ylim = c(0, 2000))
-  
+     xlim = c(0, x_limit), ylim = c(0, y_eq_limit))
+
   # add legend for "eq" plots
   legend("topright", legend = "eq", col = "green", pch = 1, x.intersp = 0.5, y.intersp = 0.5)
 }
@@ -321,9 +320,4 @@ for (i in 1:100) { ## loop model for 100 simulations
 # Probability of  at least one car missing the ferry departure 
 # (i.e. still being in the queue at the end of the simulation) is given by: 
 prob <- mean(failed)
-print(prob)
-
-# 用点还是用线？
-# 100次实验，tmb=40？
-# 坐标
-# 用不用考虑结尾的nf？
+cat(prob)
