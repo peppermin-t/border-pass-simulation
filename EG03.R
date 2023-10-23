@@ -74,7 +74,7 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
   # Define "insert_cars" function
   # Aim to determine which queue that an arriving car should join and
   #   to assign processing times if it is the first car for that queue
-  # Parameters used are "queueing status in each station", "remaining processing times" and "parameters for uniform distributions".
+  # Parameters used are "queuing status in each station", "remaining processing times" and "parameters for uniform distributions".
 
   insert_cars <- function(queues, times_left, tm, tr) {
 
@@ -99,7 +99,7 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
   # Aim to process the transmission of cars from French to British border.
   # Each queue will have one car less when the process is finished, and if there are
   #   more cars in the following, we will assign processing time to that car.
-  # Parameters used are "queueing status in each station", "processing times" and "parameters for uniform distribution".
+  # Parameters used are "queuing status in each station", "remaining processing times" and "parameters for uniform distribution".
 
   update_stations <- function(queues, times_left, ii, tm, tr) {
 
@@ -119,7 +119,7 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
     # let the processing times at the index of queues without cars to be "-1"
     times_left[ii_no_car] <- -1
 
-    # return output as lists of "q" for
+    # return output as lists of "q" for queuing status in each station and "tl" for remaining processing times
     list(q=queues, tl=times_left)
   }
 
@@ -138,7 +138,7 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
   french.times_left <- rep(-1, mf)
 
   # initialise a list of "mf" numbers, with "0"
-  # this shows the number of cars that are queueing in each station
+  # this shows the number of cars that are queuing in each station
   french.queues <- rep(0, mf)
 
   # initialise a list of "mb (number of british stations)" numbers, with "-1"
@@ -167,12 +167,12 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
     if (i < length(car_coming) && car_coming[i]) {
 
       # apply "insert_cars" function by stating its parameter
-      # the outputs are "q" (queueing status in each station) and "tl" (remaining processing times)
+      # the outputs are "q" (queuing status in each station) and "tl" (remaining processing times)
       french <- insert_cars(french.queues, french.times_left, tmf, trf)
 
       # store each output in a new vector
       french.times_left <- french$tl # "tl" (remaining processing times)
-      french.queues <- french$q # "q" (queueing status in each station)
+      french.queues <- french$q # "q" (queuing status in each station)
     }
 
     ## Transmission (Moving from French border to British border)
@@ -191,7 +191,7 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
       # if the total cars moving to british station is not 1
       if (length(idx_rmv) != 1)
         # assign processing times to these cars,
-        # where the number of cars depends on the queueing status in the british border,
+        # where the number of cars depends on the queuing status in the british border,
         # therefore we take the minimum of:
         # 1. the difference between the max capacity in each british stations
         # 2. the total number of cars moving to british stations
@@ -202,23 +202,23 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
       transmit <- length(idx_rmv)
 
       # apply "update_stations" function by stating its parameters
-      # the outputs are "q" (queueing status in each station) and "tl" (remaining processing times)
+      # the outputs are "q" (queuing status in each station) and "tl" (remaining processing times)
       french <- update_stations(french.queues, french.times_left, idx_rmv, tmf, trf)
 
       # store each output in a new vector
       french.times_left <- french$tl # "tl" (remaining processing times)
-      french.queues <- french$q # "q" (queueing status in each station)
+      french.queues <- french$q # "q" (queuing status in each station)
 
       ## Entering British border
       for (j in 1:transmit) { ## loop over the number of cars that will undergo transmission
 
         # apply "insert_cars" function by stating its parameters
-        # the outputs are "q" (queueing status in each station) and "tl" (remaining processing times)
+        # the outputs are "q" (queuing status in each station) and "tl" (remaining processing times)
         brit <- insert_cars(brit.queues, brit.times_left, tmb, trb)
 
         # store each output in a new vector
         brit.times_left <- brit$tl # "tl" (remaining processing times)
-        brit.queues <- brit$q # "q" (queueing status in each station)
+        brit.queues <- brit$q # "q" (queuing status in each station)
       }
     }
 
@@ -231,12 +231,12 @@ qsim <- function(mf=5, mb=5, a.rate=.1, trb=40, trf=40, tmb=30, tmf=30, maxb=20)
     if (length(idx_rmv) != 0) {
 
       # apply "update_stations" function by stating its parameters
-      # the outputs are "q" (queueing status in each station) and "tl" (remaining processing times)
+      # the outputs are "q" (queuing status in each station) and "tl" (remaining processing times)
       brit <- update_stations(brit.queues, brit.times_left, idx_rmv, tmb, trb)
 
       # store each output in a new vector
       brit.times_left <- brit$tl # "tl" (remaining processing times)
-      brit.queues <- brit$q # "q" (queue status in each station)
+      brit.queues <- brit$q # "q" (queuing status in each station)
     }
 
     ## Outputs
@@ -269,11 +269,11 @@ plot_qsim <- function(res, params) {
   y_eq_limit <- max(res$eq)
 
   ## plot the first output "nf" against the simulated seconds (shown by red dots)
-  plot(x_indices, res$nf, col = "red", xlab = "current time/s", ylab = "queue lengths",
+  plot(x_indices, res$nf, col = "red", xlab = "Time (in seconds)", ylab = "Length of Queues",
 
-     # add title 
-     main = paste("queue lengths(", params, ")"),
-     # define limits of each axis
+     # add title
+     main = paste("Length of Queues(", params, ")"),
+     # define limits for each axis
      xlim = c(0, x_limit), ylim = c(0, y_nfb_limit), pch = 20)
 
   # add legend with red representing output "nf" and blue representing output "nb"
@@ -285,10 +285,10 @@ plot_qsim <- function(res, params) {
   points(x_indices, res$nb, col="blue", pch = 20)
 
   # plot the third output "eq" against the simulated seconds (shown by green dots)
-  plot(x_indices, res$eq, col = "green", xlab = "current time/s", ylab = "queue time",
+  plot(x_indices, res$eq, col = "green", xlab = "Time (in seconds)", ylab = "Queuing Time (in seconds)",
      # add title
-     main = paste("expected queue time(", params, ")"),
-     # define limits of each axis
+     main = paste("Expected Queuing Time(", params, ")"),
+     # define limits for each axis
      xlim = c(0, x_limit), ylim = c(0, y_eq_limit), pch = 20)
 
   # add legend for "eq" plots
@@ -327,7 +327,7 @@ cat(paste("The probability of at least one car missing the ferry departure is", 
 # We are comparing the two plots in the first row and those in the second row.
 # - When the process at the british border is being delayed slightly, the processing speed in the British border is longer and queues are expected to reach its maximum capacity (maxb) faster (shown by blue plots). 
 # - This will eventually impact on the processing speed in the french border as the cars are unable to proceed, causing average length of french queues to increase (shown by the red plots)
-# - Therefore, the increase in the processing times in both borders will cause the increase in the expected queueing time (shown by the green plots). 
+# - Therefore, the increase in the processing times in both borders will cause the increase in the expected queuing time (shown by the green plots). 
 
 # Instructor's comments:
 # The commenting is good line by line, but is not so good on the overall structure.
