@@ -274,25 +274,25 @@ plot_qsim <- function(res, params) {
      # add title 
      main = paste("queue lengths(", params, ")"),
      # define limits of each axis
-     xlim = c(0, x_limit), ylim = c(0, y_nfb_limit))
+     xlim = c(0, x_limit), ylim = c(0, y_nfb_limit), pch = 20)
 
   # add legend with red representing output "nf" and blue representing output "nb"
   legend("topright", legend = c("nf", "nb"), col = c("red", "blue"),
      # edit size of legend
-     pch = 1, x.intersp = 0.5, y.intersp = 0.5)
+     pch = 20, x.intersp = 0.5, y.intersp = 0.5)
 
   # plot the second output "nb" against the simulated seconds (shown by blue dots)
-  points(x_indices, res$nb, col="blue")
+  points(x_indices, res$nb, col="blue", pch = 20)
 
   # plot the third output "eq" against the simulated seconds (shown by green dots)
   plot(x_indices, res$eq, col = "green", xlab = "current time/s", ylab = "queue time",
      # add title
      main = paste("expected queue time(", params, ")"),
      # define limits of each axis
-     xlim = c(0, x_limit), ylim = c(0, y_eq_limit))
+     xlim = c(0, x_limit), ylim = c(0, y_eq_limit), pch = 20)
 
   # add legend for "eq" plots
-  legend("topright", legend = "eq", col = "green", pch = 1, x.intersp = 0.5, y.intersp = 0.5)
+  legend("topright", legend = "eq", col = "green", pch = 20, x.intersp = 0.5, y.intersp = 0.5)
 }
 
 # Set number of plots to be shown in each row and each column
@@ -317,8 +317,8 @@ for (i in 1:100) { ## loop model for 100 simulations
   failed[i] <- res$nf[length(res$nf)] + res$nb[length(res$nb)] != 0
 }
 
-# Probability of  at least one car missing the ferry departure 
-# (i.e. still being in the queue at the end of the simulation) is given by: 
+# Probability of  at least one car missing the ferry departure
+# (i.e. still being in the queue at the end of the simulation) is given by:
 prob <- mean(failed)
 cat(paste("The probability of at least one car missing the ferry departure is", prob))
 
@@ -328,3 +328,14 @@ cat(paste("The probability of at least one car missing the ferry departure is", 
 # - When the process at the british border is being delayed slightly, the processing speed in the British border is longer and queues are expected to reach its maximum capacity (maxb) faster (shown by blue plots). 
 # - This will eventually impact on the processing speed in the french border as the cars are unable to proceed, causing average length of french queues to increase (shown by the red plots)
 # - Therefore, the increase in the processing times in both borders will cause the increase in the expected queueing time (shown by the green plots). 
+
+# Instructor's comments:
+# The commenting is good line by line, but is not so good on the overall structure.
+# For example it is not clear what the function arguments actually represent for insert_cars etc.
+# I think that something that described the overall design and data structures involved would have been helpful.
+# Currently it takes a lot of back-and-forth in the code to figure out exactly how it works.
+# What you have somehow not made clear is what the data structures are that actually define the state of the system
+# (given the comments, it takes the reader a while to be sure that you are not keeping records for each car, for example).
+
+# Visually I think you have not chosen the clearest way to plot the data - the symbol sizes are so big that they blur
+# the results a little - I think lines or a much smaller symbol size would have been clearer.
